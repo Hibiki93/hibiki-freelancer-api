@@ -29,6 +29,9 @@ app.get('/',(req,res)=>{
 // GET
 async function getFreelancers(page = 1, perPage = 10) {
     try {
+        page = parseInt(page);
+        perPage = parseInt(perPage);
+        
         const conn = await client.connect();
         const db = await conn.db("user_table");
         const coll = await db.collection("freelancers");
@@ -36,11 +39,23 @@ async function getFreelancers(page = 1, perPage = 10) {
         const totalFreelancers = await coll.countDocuments();
         const totalPages = Math.ceil(totalFreelancers / perPage);
 
-        const result = await coll
-            .find()
-            .skip((page - 1) * perPage)
-            .limit(perPage)
-            .toArray();
+        let result;
+        if (totalFreelancers > 0) {
+            const skipCount = (page - 1) * perPage;
+            if (skipCount < totalFreelancers) {
+                result = await coll
+                    .find()
+                    .skip(skipCount)
+                    .limit(Math.min(perPage, totalFreelancers - skipCount))
+                    .toArray();
+            } else {
+                result = [];
+            }
+        } else {
+            result = [];
+        }
+
+        await client.close();
 
         return {
             data: result,
@@ -54,10 +69,9 @@ async function getFreelancers(page = 1, perPage = 10) {
     } catch (err) {
         console.error(err);
         throw err;
-    } finally {
-        await client.close();
     }
 }
+
 app.get('/freelancers', async (req, res) => {
     try {
         const page = req.query.page || 1;
@@ -125,9 +139,9 @@ async function updateFreelancerById(id, data) {
         const conn = await client.connect();
         const db = await conn.db("user_table");
         const collection = db.collection('freelancers');
-        const result = await collection.updateOne({ _id: ObjectId(id) }, { $set: data });
+        const objectId = new ObjectId(id);
+        const result = await collection.updateOne({ _id: objectId }, { $set: data });
         await client.close();
-
         return result.modifiedCount > 0 ? data : null;
     } catch (err) {
         console.error(err);
@@ -169,7 +183,7 @@ app.put('/freelancers/:id', async (req, res) => {
         const result = await updateFreelancerById(freelancerId, freelancerData);
 
         if (!result) {
-            return res.status(404).send('Freelancer not found');
+            return res.status(404).send('Freelancer is same with before');
         }
 
         res.status(200).send(result);
@@ -200,20 +214,16 @@ app.delete('/freelancers/:id', async (req, res) => {
     const freelancerId = req.params.id;
 
     try {
-        // Check if the provided ID is a valid ObjectId
         if (!ObjectId.isValid(freelancerId)) {
             return res.status(400).send('Invalid freelancer ID');
         }
 
-        // Attempt to delete the freelancer with the provided ID
         const result = await deleteFreelancerById(freelancerId);
 
-        // Check if a freelancer was deleted
         if (result.deletedCount === 0) {
             return res.status(404).send('Freelancer not found');
         }
 
-        // Return success response
         res.status(200).send('Freelancer deleted successfully');
     } catch (err) {
         console.error(err);
