@@ -58,14 +58,19 @@ async function getFreelancers(page = 1, perPage = 10) {
         await client.close();
     }
 }
-app.get('/freelancers',async(req,res)=>{
-    try{
-        const result = await getFreelancers()
-        res.send(result);
-    }catch (err) {
+app.get('/freelancers', async (req, res) => {
+    try {
+        const page = req.query.page || 1;
+        const perPage = req.query.perPage || 10;
+
+        const result = await getFreelancers(page, perPage); // Pass pagination parameters
+
+        res.json(result);
+    } catch (err) {
+        console.error(err);
         res.status(500).send('Error fetching freelancers data');
     }
-})
+});
 
 // ADD
 async function createFreelancer(freelancerData) {
@@ -115,58 +120,66 @@ app.post('/freelancers', async (req, res) => {
 });
 
 // EDIT
-async function updateFreelancerById(){
-    const conn = await client.connect();
-    const db = await conn.db("user_table");
-    const collection = db.collection('freelancers'); 
-    const result = await collection.updateOne({ _id: ObjectId(id) }, { $set: data });
-    return result.modifiedCount > 0 ? data : null;
+async function updateFreelancerById(id, data) {
+    try {
+        const conn = await client.connect();
+        const db = await conn.db("user_table");
+        const collection = db.collection('freelancers');
+        const result = await collection.updateOne({ _id: ObjectId(id) }, { $set: data });
+        await client.close();
+
+        return result.modifiedCount > 0 ? data : null;
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
 }
+
 app.put('/freelancers/:id', async (req, res) => {
     try {
         const freelancerId = req.params.id;
         const freelancerData = req.body;
-        res.send(ObjectId.isValid(freelancerId))
-        res.send(freelancerId)
 
         if (!ObjectId.isValid(freelancerId)) {
             return res.status(400).send('Invalid freelancer ID');
-        }else{
-            if (!freelancerData.username || !freelancerData.email || !freelancerData.phone_num) {
-                return res.status(400).send('Username, email, and phone number are required');
-            }
-
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(freelancerData.email)) {
-                return res.status(400).send('Invalid email format');
-            }
-
-            const phoneNumRegex = /^\d+$/;
-            if (!phoneNumRegex.test(freelancerData.phone_num)) {
-                return res.status(400).send('Phone number must contain only digits');
-            }
-            
-            if (freelancerData.skillsets === undefined || freelancerData.skillsets.length === 0) {
-                freelancerData.skillsets = [];
-            }
-
-            if (freelancerData.hobby === undefined || freelancerData.hobby.length === 0) {
-                freelancerData.hobby = [];
-            }
-            const result = await updateFreelancerById(freelancerId, freelancerData);
-        
-            if (!result) {
-                return res.status(404).send('Freelancer not found');
-            }
-
-            res.status(200).send(result);
         }
+
+        if (!freelancerData.username || !freelancerData.email || !freelancerData.phone_num) {
+            return res.status(400).send('Username, email, and phone number are required');
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(freelancerData.email)) {
+            return res.status(400).send('Invalid email format');
+        }
+
+        const phoneNumRegex = /^\d+$/;
+        if (!phoneNumRegex.test(freelancerData.phone_num)) {
+            return res.status(400).send('Phone number must contain only digits');
+        }
+        
+        if (freelancerData.skillsets === undefined || freelancerData.skillsets.length === 0) {
+            freelancerData.skillsets = [];
+        }
+
+        if (freelancerData.hobby === undefined || freelancerData.hobby.length === 0) {
+            freelancerData.hobby = [];
+        }
+
+        const result = await updateFreelancerById(freelancerId, freelancerData);
+
+        if (!result) {
+            return res.status(404).send('Freelancer not found');
+        }
+
+        res.status(200).send(result);
 
     } catch (err) {
         console.error(err);
         res.status(500).send('Error updating freelancer');
     }
 });
+
 // DELETE
 async function deleteFreelancerById(freelancerId) {
     try {
