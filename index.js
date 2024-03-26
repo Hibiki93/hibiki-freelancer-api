@@ -201,7 +201,14 @@ async function deleteFreelancerById(freelancerId) {
         const conn = await client.connect();
         const db = await conn.db("user_table");
         const coll = await db.collection("freelancers");
-        const result = await coll.deleteOne({ _id: freelancerId });
+
+        // Convert freelancerId to ObjectId
+        const objectId = new ObjectId(freelancerId);
+        console.log("Deleting freelancer with ID:", objectId);
+
+        const result = await coll.deleteOne({ _id: objectId });
+        console.log("Delete operation result:", result);
+
         return result.deletedCount;
     } catch (err) {
         console.log(err);
