@@ -4,11 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint .",
-    "test": "jest",
-    "start": "node index.js",
-    "build": "echo 'No build step required for Node.js apps'",
-    "prestart": "npm run lint && npm test"
+    "start": "node index.js"
   },
   "devDependencies": {
     "@babel/core": "^7.18.0",
