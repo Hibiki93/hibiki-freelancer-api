@@ -180,6 +180,7 @@ app.put('/freelancers/:id', async (req, res) => {
     }
 });
 
+
 // DELETE
 async function deleteFreelancerById(freelancerId) {
     try {
