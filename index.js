@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const { MongoClient, ServerApiVersion,ObjectId } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const password = encodeURIComponent("RP1wq8OPiKbRegN2");
 const uri = `mongodb+srv://yue555:${password}@userdb.urornxb.mongodb.net/`;
 const port = 3000;
@@ -126,6 +126,8 @@ app.put('/freelancers/:id', async (req, res) => {
     try {
         const freelancerId = req.params.id;
         const freelancerData = req.body;
+        res.send(ObjectId.isValid(freelancerId))
+        res.send(freelancerId)
 
         if (!ObjectId.isValid(freelancerId)) {
             return res.status(400).send('Invalid freelancer ID');
