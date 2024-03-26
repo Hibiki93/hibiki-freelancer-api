@@ -204,3 +204,7 @@ app.delete('/freelancers/:id', async (req, res) => {
         res.status(500).send('Error deleting freelancer');
     }
 });
+
+app.all('*', (req, res) => {
+    res.status(404).send('404 Not Found');
+});
