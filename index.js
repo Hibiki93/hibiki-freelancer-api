@@ -87,30 +87,33 @@ app.get('/freelancers', async (req, res) => {
 });
 
 async function getFreelancersDetail(ID) {
-    try {      
+    try {
         const conn = await client.connect();
         const db = await conn.db("user_table");
-        const coll = await db.collection("freelancers");
-
-        const freelancer = await coll.findOne({ _id: ID });
+        const collection = await db.collection("freelancers");
+        const objectId = new ObjectId(ID);
+        const freelancer = await collection.findOne({ _id: objectId });
 
         if (!freelancer) {
             throw new Error('Freelancer not found');
         }
 
         await client.close();
+
         return {
             data: freelancer
         };
     } catch (err) {
-        console.error(err);
+        console.error('Error fetching freelancers data:', err);
         throw err;
     }
 }
 
 app.get('/freelancers/:id', async (req, res) => {
+    console.log('getting detail')
     try {
         const ID = req.params.id;
+        console.log(ID)
         const result = await getFreelancersDetail(ID);
 
         res.json(result);
