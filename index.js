@@ -87,10 +87,7 @@ app.get('/freelancers', async (req, res) => {
 });
 
 async function getFreelancersDetail(ID) {
-    try {
-        page = parseInt(page);
-        perPage = parseInt(perPage);
-        
+    try {      
         const conn = await client.connect();
         const db = await conn.db("user_table");
         const coll = await db.collection("freelancers");
