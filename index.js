@@ -111,9 +111,9 @@ async function getFreelancersDetail(ID) {
     }
 }
 
-app.get('/freelancers', async (req, res) => {
+app.get('/freelancers/:id', async (req, res) => {
     try {
-        const ID = req.query.id;
+        const ID = req.params.id;
         const result = await getFreelancersDetail(ID);
 
         res.json(result);
