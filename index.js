@@ -77,8 +77,44 @@ app.get('/freelancers', async (req, res) => {
     try {
         const page = req.query.page || 1;
         const perPage = req.query.perPage || 10;
+        const result = await getFreelancers(page, perPage);
 
-        const result = await getFreelancers(page, perPage); // Pass pagination parameters
+        res.json(result);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error fetching freelancers data');
+    }
+});
+
+async function getFreelancersDetail(ID) {
+    try {
+        page = parseInt(page);
+        perPage = parseInt(perPage);
+        
+        const conn = await client.connect();
+        const db = await conn.db("user_table");
+        const coll = await db.collection("freelancers");
+
+        const freelancer = await coll.findOne({ _id: ID });
+
+        if (!freelancer) {
+            throw new Error('Freelancer not found');
+        }
+
+        await client.close();
+        return {
+            data: freelancer
+        };
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
+}
+
+app.get('/freelancers', async (req, res) => {
+    try {
+        const ID = req.query.id;
+        const result = await getFreelancersDetail(ID);
 
         res.json(result);
     } catch (err) {
