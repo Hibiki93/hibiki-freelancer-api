@@ -3,7 +3,7 @@ const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const password = encodeURIComponent("RP1wq8OPiKbRegN2");
 const uri = `mongodb+srv://yue555:${password}@userdb.urornxb.mongodb.net/`;
-const port = 3000;
+const port = 3001;
 
 const app = express();
 app.use(cors());
@@ -274,6 +274,77 @@ app.delete('/freelancers/:id', async (req, res) => {
         res.status(500).send('Error deleting freelancer');
     }
 });
+
+// GET PROFILE
+
+async function getProfile() {
+    try {
+        const conn = await client.connect();
+        const db = await conn.db("razer_profile");
+        const coll = await db.collection("profile");
+        const cursor = await coll.find();
+        const result = await cursor.toArray();
+        await client.close();
+
+        return {
+            data: result,
+        };
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
+}
+
+app.get('/profile', async (req, res) => {
+    try {
+        const result = await getProfile();
+        res.json(result);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error fetching profile data');
+    }
+});
+
+// POST PROFILE
+app.post('/profile', async (req, res) => {
+    const profileData = req.body;
+
+    try {
+        const conn = await client.connect();
+        const db = await conn.db("razer_profile");
+        const coll = await db.collection("profile");
+
+        const existingIds = (await coll.find().toArray()).map(profile => profile._id.toString());
+
+        for (const profile of profileData) {
+            if (profile._id) {
+                await coll.updateOne({ _id: new ObjectId(profile._id) }, { $set: profile });
+                console.log(`Updated profile with ID ${profile._id}`);
+            } else {
+                delete profile._id; 
+                const result = await coll.insertOne(profile);
+                console.log(`Inserted profile with ID ${result.insertedId}`);
+            }
+        }
+
+        const profilesToDelete = existingIds.filter(id => !profileData.some(profile => profile._id === id));
+        for (const id of profilesToDelete) {
+            await coll.deleteOne({ _id: new ObjectId(id) });
+            console.log(`Deleted profile with ID ${id}`);
+        }
+
+        res.status(200).send('Profiles saved successfully');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error saving profiles');
+    } finally {
+        await client.close();
+    }
+});
+
+
+
+
 
 app.all('*', (req, res) => {
     res.status(404).send('404 Not Found');
