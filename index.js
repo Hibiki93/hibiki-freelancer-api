@@ -311,20 +311,31 @@ app.post('/profile', async (req, res) => {
 
     try {
         const conn = await client.connect();
-        const db = await conn.db("razer_profile");
-        const coll = await db.collection("profile");
+        const db = conn.db("razer_profile");
+        const coll = db.collection("profile");
 
-        const existingIds = (await coll.find().toArray()).map(profile => profile._id.toString());
+        const existingIds = (await coll.find().map(profile => profile._id.toString()).toArray());
+
+        const bulkOps = [];
 
         for (const profile of profileData) {
             if (profile._id) {
-                await coll.updateOne({ _id: new ObjectId(profile._id) }, { $set: profile });
-                console.log(`Updated profile with ID ${profile._id}`);
+                const { _id, ...updateData } = profile; // Exclude _id field
+                bulkOps.push({
+                    updateOne: {
+                        filter: { _id: new ObjectId(profile._id) },
+                        update: { $set: updateData } // Use updateData without _id
+                    }
+                });
             } else {
-                delete profile._id; 
-                const result = await coll.insertOne(profile);
-                console.log(`Inserted profile with ID ${result.insertedId}`);
+                bulkOps.push({
+                    insertOne: { document: profile }
+                });
             }
+        }
+
+        if (bulkOps.length > 0) {
+            await coll.bulkWrite(bulkOps);
         }
 
         const profilesToDelete = existingIds.filter(id => !profileData.some(profile => profile._id === id));
@@ -341,6 +352,8 @@ app.post('/profile', async (req, res) => {
         await client.close();
     }
 });
+
+
 
 
 
