@@ -317,7 +317,7 @@ app.post('/profile', async (req, res) => {
         const existingIds = (await coll.find().map(profile => profile._id.toString()).toArray());
 
         const bulkOps = [];
-        if(profileData.length() >= 4){
+        if(profileData.length >= 4){
             
                     for (const profile of profileData) {
                         if (profile._id) {
