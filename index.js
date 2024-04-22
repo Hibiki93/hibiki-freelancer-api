@@ -317,34 +317,39 @@ app.post('/profile', async (req, res) => {
         const existingIds = (await coll.find().map(profile => profile._id.toString()).toArray());
 
         const bulkOps = [];
-
-        for (const profile of profileData) {
-            if (profile._id) {
-                const { _id, ...updateData } = profile; // Exclude _id field
-                bulkOps.push({
-                    updateOne: {
-                        filter: { _id: new ObjectId(profile._id) },
-                        update: { $set: updateData } // Use updateData without _id
+        if(profileData.length() >= 4){
+            
+                    for (const profile of profileData) {
+                        if (profile._id) {
+                            const { _id, ...updateData } = profile; // Exclude _id field
+                            bulkOps.push({
+                                updateOne: {
+                                    filter: { _id: new ObjectId(profile._id) },
+                                    update: { $set: updateData } // Use updateData without _id
+                                }
+                            });
+                        } else {
+                            bulkOps.push({
+                                insertOne: { document: profile }
+                            });
+                        }
                     }
-                });
-            } else {
-                bulkOps.push({
-                    insertOne: { document: profile }
-                });
-            }
+            
+                    if (bulkOps.length > 0) {
+                        await coll.bulkWrite(bulkOps);
+                    }
+            
+                    const profilesToDelete = existingIds.filter(id => !profileData.some(profile => profile._id === id));
+                    for (const id of profilesToDelete) {
+                        await coll.deleteOne({ _id: new ObjectId(id) });
+                        console.log(`Deleted profile with ID ${id}`);
+                    }
+            
+                    res.status(200).send('Profiles saved successfully');
+        }else{
+            res.status(200).send('Default Profiles cant not send');
         }
 
-        if (bulkOps.length > 0) {
-            await coll.bulkWrite(bulkOps);
-        }
-
-        const profilesToDelete = existingIds.filter(id => !profileData.some(profile => profile._id === id));
-        for (const id of profilesToDelete) {
-            await coll.deleteOne({ _id: new ObjectId(id) });
-            console.log(`Deleted profile with ID ${id}`);
-        }
-
-        res.status(200).send('Profiles saved successfully');
     } catch (err) {
         console.error(err);
         res.status(500).send('Error saving profiles');
