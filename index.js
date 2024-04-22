@@ -349,7 +349,6 @@ app.post('/profile', async (req, res) => {
         }else{
             res.status(200).send('Default Profiles cant not send');
         }
-
     } catch (err) {
         console.error(err);
         res.status(500).send('Error saving profiles');
