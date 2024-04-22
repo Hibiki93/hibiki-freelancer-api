@@ -353,7 +353,9 @@ app.post('/profile', async (req, res) => {
         console.error(err);
         res.status(500).send('Error saving profiles');
     } finally {
-        await client.close();
+        if (client) {
+            await client.close();
+        }
     }
 });
 
